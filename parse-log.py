@@ -10,7 +10,7 @@ from geolite2 import geolite2
 # Version:       0.1
 # Author:        zah20
 #
-# Last Modified: Sun Sep 20, 2020 (08:22 PM)
+# Last Modified: Sun Sep 20, 2020 (09:21 PM)
 # 
 # Requiremented modules: 
 # python-geoip, python-geoip-geolite2, matplotlib
@@ -25,6 +25,11 @@ from geolite2 import geolite2
 global record, tmp_outfile, tmp_data, process_data, geo, \
    iplookup_url, save_file, check_online
 
+# Change this to 'False' if you want to disable online ip lookup
+check_online = True
+
+iplookup_url = 'https://ipapi.co/'
+
 # Bash processed file with semi processed data stored in tmp_outfile
 tmp_outfile = '/tmp/test.log'
 
@@ -32,16 +37,14 @@ tmp_data = [] # Raw, unprocessed data
 
 save_file = 'output.txt'
 
+#============================================================
 # Each record object contains tuple (ip, date, time, country)
 # ip = '0.0.0.0'
 # date = (year,month,day)
 # time = (hour,minute)
-
+#============================================================
 record = [] # Fully processed data
 
-iplookup_url = 'https://ipapi.co/'
-
-check_online = True
 
 ##################################################
 # Data Processing 
@@ -258,6 +261,7 @@ def plot_bar(data=[], out_file=''):
 
     return True
 
+
 def plot_time_analysis(data=[], out_file=''):
     # Plots line chart using based on input data
     # data = (ip, date, time, country)
@@ -305,9 +309,9 @@ def check_platform():
         sys.exit(1) 
 
 def check_prerequisites():
-    returncode = run_cmd_exit(['which','awk'])
+    return_code = run_cmd_exit(['which','awk'])
 
-    if (returncode == 1):
+    if (return_code == 1):
         print("[!] Warning /usr/bin/awk is missing. Quitting")
         sys.exit(1)
     
@@ -360,8 +364,7 @@ def run_cmd_exit(cmd=[]):
 
 
 def load_file(filename=''):
-    "Opens given file and returns a list with its contents"
-
+    # Opens given file and returns a list with its contents
 
     try:
         tmp_data = open(filename, 'r').readlines()
@@ -403,6 +406,7 @@ def write_file(out_data=[], filename=''):
 ##################################################
 
 def main():
+
     global tmp_outfile, save_file, out_data, record
 
     check_errors()
