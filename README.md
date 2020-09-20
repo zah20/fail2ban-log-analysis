@@ -1,17 +1,18 @@
-# fail2ban-log-analysis
-Python script to automatically parse fail2ban log and generate statistics on detected attacks
+## Fail2ban Log Analysis Script
+This script automatically parses fail2ban log and generates statistics on detected attacks
 
 ![alt tag](resources/img/attacks-by-country.png)
 
 ![alt tag](resources/img/attacks-by-time.png)
 
 ## Requirements:
+- Python 3.x
 - python-geoip
 - python-geoip-geolite2
 - matplotlib
 
 ## Features:
-- Uses offline geoip database to lookup country of ip address
+- Uses offline geoip database to lookup country
 - Also supports online ip lookup
 
 ```
