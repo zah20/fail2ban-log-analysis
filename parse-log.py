@@ -10,9 +10,9 @@ from geolite2 import geolite2
 # Version:       0.1
 # Author:        zah20
 #
-# Last Modified: Sun Sep 20, 2020 (09:21 PM)
+# Last Modified: Mon Sep 21, 2020 (07:46 AM)
 # 
-# Requiremented modules: 
+# Required modules: 
 # python-geoip, python-geoip-geolite2, matplotlib
 #
 ##################################################
