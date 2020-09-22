@@ -25,7 +25,8 @@ Usage: python3 parse-log.py fail2ban.log
 ```
 
 ## TODO:
-- Module getopts integration to enable commandline options
-- Email weekly / monthly report to user
+- Enable commandline options
 - Option to run as a service 
-- Support for analysis of other types of logs, e.g: lastlog, btmp, wtmp, etc.
+- Email weekly / monthly report to user
+- Support for analysis of other types of logs, e.g: btmp, etc.
+

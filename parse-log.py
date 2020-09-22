@@ -10,7 +10,7 @@ from geolite2 import geolite2
 # Version:       0.1
 # Author:        zah20
 #
-# Last Modified: Mon Sep 21, 2020 (07:46 AM)
+# Last Modified: Tue Sep 22, 2020 (09:26 AM)
 # 
 # Required modules: 
 # python-geoip, python-geoip-geolite2, matplotlib
@@ -37,12 +37,9 @@ tmp_data = [] # Raw, unprocessed data
 
 save_file = 'output.txt'
 
-#============================================================
-# Each record object contains tuple (ip, date, time, country)
-# ip = '0.0.0.0'
-# date = (year,month,day)
-# time = (hour,minute)
-#============================================================
+#=======================================================
+# Each record object contains (ip, date, time, country)
+#=======================================================
 record = [] # Fully processed data
 
 
