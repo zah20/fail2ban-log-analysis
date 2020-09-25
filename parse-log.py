@@ -1,19 +1,18 @@
 #!/usr/bin/python3
-
 import matplotlib.pyplot as plt
 import sys, subprocess, os, time
 from geolite2 import geolite2
 
 ##################################################
-# Program:       parse-log.py
+# Program:       watcher.py
 # License:       GPLv3
 # Version:       0.1
 # Author:        zah20
 #
-# Last Modified: Tue Sep 22, 2020 (09:26 AM)
+# Last Modified: Fri Sep 25, 2020 (11:00 AM)
 # 
-# Required modules: 
-# python-geoip, python-geoip-geolite2, matplotlib
+# Installation: 
+# pip3 install python-geoip python-geoip-geolite2
 #
 ##################################################
 
@@ -25,22 +24,21 @@ from geolite2 import geolite2
 global record, tmp_outfile, tmp_data, process_data, geo, \
    iplookup_url, save_file, check_online
 
-# Change this to 'False' if you want to disable online ip lookup
-check_online = True
+# Set this to True if you want to enable online lookup
+# Not recommended if you big log with many IPs
+check_online = False
 
-iplookup_url = 'https://ipapi.co/'
-
-# Bash processed file with semi processed data stored in tmp_outfile
+# Bash processed file with semi processed data
 tmp_outfile = '/tmp/test.log'
 
 tmp_data = [] # Raw, unprocessed data 
 
 save_file = 'output.txt'
 
-#=======================================================
-# Each record object contains (ip, date, time, country)
-#=======================================================
+# Each record object contains tuple (ip, date, time, country)
 record = [] # Fully processed data
+
+iplookup_url = 'https://ipapi.co/'
 
 
 ##################################################
@@ -51,9 +49,10 @@ def format_fail2ban_log(input_filename='', output_filename=''):
     # Parses fail2ban.log file using awk
 
     if (input_filename != '' and output_filename != ''):
-        run_cmd(['cat %s | grep Ban | \
-                 awk \'{print $1" > "$2" > "$8}\' > %s' % \
+        run_cmd(['cat %s | grep Found | \
+                 awk \'{print $8" > "$10" > "$11}\' > %s' % \
                  (input_filename, output_filename)])
+
 
 def get_country_count(data=[]):
     # Gets counts by country
@@ -62,11 +61,10 @@ def get_country_count(data=[]):
 
     count_by_country = []
 
-    #data = read_file_format_data(save_file)
-
     formatted_data = format_list_to_country_count(data)
 
     return formatted_data
+
 
 def format_list_to_country_count(list_input = []):
     # Formats list_input to [country, count]
@@ -91,6 +89,17 @@ def format_list_to_country_count(list_input = []):
         return None
     
 
+def sort_country_count(list_input=[], n=10):
+    # Sorts data by count (descending order) 
+    # list_input -> [country,count]
+    # returns top n number of values, specified by n
+
+    _list_input = sorted(list_input, key=lambda x: x[1], \
+                         reverse=True)
+
+    return _list_input[:n]
+
+
 def search_list(list_input=[], val=None):
     # Searches list_input for val
     # Returns index of first match, or None if no match found
@@ -103,6 +112,7 @@ def search_list(list_input=[], val=None):
                 return i
 
     return None
+
 
 def format_list_to_date_count(data=[]):
     # Convert data to (date, count) e.g: ('09-09', 3)
@@ -142,8 +152,9 @@ def search_list2(list_input=[], val=None):
 
     return None
 
+
 def fix_date(data=[]):
-    # Discards year from data
+    # Discards year from data & sorts it in ascending order
     # E.g: data = ('2020-10-10', 1) -> ('10-10', 1)
 
     _data = data
@@ -153,6 +164,8 @@ def fix_date(data=[]):
         j = '%s-%s' % (t[1], t[2])
 
         _data[i][0] = j
+
+    _data = sorted(_data, key=lambda x: x[0], reverse=False)
 
     return _data
 
@@ -170,7 +183,7 @@ def read_file_format_data(filename=''):
 
 
 def process_data():
-    global tmp_data, tmp_outfile, record 
+    global tmp_data, tmp_outfile, record, check_online
 
     iplookup = geolite2.reader()
 
@@ -183,14 +196,23 @@ def process_data():
         for j in range(len(i)):
             i[j] = i[j].strip()
 
-        date = i[0]
-        time = i[1].split(',')[0][:-3]
-        ip   = i[2]
+        date = i[1]
+        time = i[2]
+        ip   = i[0]
 
         country = iplookup.get(ip)
 
         if country != None:
-            country = iplookup.get(ip)['country']['iso_code']
+            try:
+                country = iplookup.get(ip)['country']['iso_code']
+            except (BaseException):
+                if (check_online != False):
+                    try:
+                       country = iplookup_online(ip)
+                    except (BaseException):
+                        country = 'Unknown'
+                else:
+                    country = 'Unknown'
         else:
             try:
                country = iplookup_online(ip)
@@ -205,7 +227,7 @@ def iplookup_online(ip_addr):
     global iplookup_url, check_online
 
     if check_online == False:
-        return 'Online Lookup Disabled'
+        return 'Unknown'
     else:
         stdout, stderr = run_cmd('curl %s%s/country' % \
                                  (iplookup_url, ip_addr))
@@ -230,7 +252,7 @@ def plot_bar(data=[], out_file=''):
     if ( data == [] or out_file == '' ):
         return False
 
-    _data = get_country_count(data)
+    _data = sort_country_count(get_country_count(data))
 
     label = []
     value = []
@@ -251,7 +273,6 @@ def plot_bar(data=[], out_file=''):
 
     plt.ylabel('Frequency of attacks')
     plt.xlabel('Country')
-    #plt.show()
 
     plt.savefig(out_file)
     plt.close()
@@ -280,7 +301,12 @@ def plot_time_analysis(data=[], out_file=''):
     plt.plot(label, value, color='red')
     plt.ylabel('Frequency of attacks')
     plt.xlabel('Timeline')
-    #plt.show()
+
+    if (len(label) >= 4):
+        plt.xticks([0, (len(label)/4), (len(label)/2), \
+                    (len(label)*(3/4)), (len(label)-1)])
+    else:
+        plt.xticks(list(range(0, len(label))))
 
     plt.savefig(out_file)
     plt.close()
@@ -296,6 +322,7 @@ def check_errors():
     check_platform()
     check_prerequisites()
     
+
 def check_platform():
     # Checks whether we're on Linux
 
@@ -305,13 +332,15 @@ def check_platform():
         print("[!] Only Linux platform is supported")
         sys.exit(1) 
 
-def check_prerequisites():
-    return_code = run_cmd_exit(['which','awk'])
 
-    if (return_code == 1):
+def check_prerequisites():
+    returncode = run_cmd_exit(['which','awk'])
+
+    if (returncode == 1):
         print("[!] Warning /usr/bin/awk is missing. Quitting")
         sys.exit(1)
     
+
 def check_files(files=[]):
     # Iterates over file_list, to verify they exist
     # Returns: Boolean indicating whether all paths are valid files
@@ -348,6 +377,7 @@ def run_cmd(cmd=[], verbose=False):
 
         return stdout,stderr
 
+
 def run_cmd_exit(cmd=[]):
     # Executes bash commands & returns exit status
 
@@ -361,7 +391,8 @@ def run_cmd_exit(cmd=[]):
 
 
 def load_file(filename=''):
-    # Opens given file and returns a list with its contents
+    "Opens given file and returns a list with its contents"
+
 
     try:
         tmp_data = open(filename, 'r').readlines()
@@ -370,6 +401,7 @@ def load_file(filename=''):
         sys.exit(1)
 
     return tmp_data
+
 
 def write_file(out_data=[], filename=''):
     # Writes the specified data to input file
@@ -403,7 +435,6 @@ def write_file(out_data=[], filename=''):
 ##################################################
 
 def main():
-
     global tmp_outfile, save_file, out_data, record
 
     check_errors()
@@ -412,13 +443,15 @@ def main():
 
     process_data()
 
+    ## Debugging purposes
+    #print_data()
+
     if (write_file(record, save_file) == False):
         print('[-] Failed trying to write data')
 
     data = read_file_format_data(save_file)
     plot_bar(data, 'ssh-attacks-by-country.png')
     plot_time_analysis(data, 'ssh-attacks-time.png')
-
 
 if __name__ == "__main__":
     main()

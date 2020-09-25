@@ -7,7 +7,7 @@ This script automatically parses fail2ban log and generates statistics on detect
 
 ## Features:
 - Uses offline geoip database to lookup country
-- Also supports online ip lookup
+- Also supports online ip lookup but not recommended if you have big log.
 
 ## Requirements:
 - Python 3.x
