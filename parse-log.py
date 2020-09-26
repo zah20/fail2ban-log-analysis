@@ -4,12 +4,11 @@ import sys, subprocess, os, time
 from geolite2 import geolite2
 
 ##################################################
-# Program:       watcher.py
+# Program:       parse-log.py
 # License:       GPLv3
-# Version:       0.1
 # Author:        zah20
 #
-# Last Modified: Fri Sep 25, 2020 (11:00 AM)
+# Last Modified: Sat Sep 26, 2020 (02:00 PM)
 # 
 # Installation: 
 # pip3 install python-geoip python-geoip-geolite2
@@ -22,7 +21,9 @@ from geolite2 import geolite2
 ##################################################
 
 global record, tmp_outfile, tmp_data, process_data, geo, \
-   iplookup_url, save_file, check_online
+   iplookup_url, save_file, check_online, version
+
+version = '0.10'
 
 # Set this to True if you want to enable online lookup
 # Not recommended if you big log with many IPs
@@ -42,7 +43,7 @@ iplookup_url = 'https://ipapi.co/'
 
 
 ##################################################
-# Data Processing 
+#               Data Processing 
 ##################################################
 
 def format_fail2ban_log(input_filename='', output_filename=''):
@@ -243,7 +244,7 @@ def print_data():
 
 
 ##################################################
-# Data Visualization 
+#               Data Visualization 
 ##################################################
 
 def plot_bar(data=[], out_file=''):
@@ -334,11 +335,23 @@ def check_platform():
 
 
 def check_prerequisites():
+    # Checks whether input log file is valid & awk exists
+
     returncode = run_cmd_exit(['which','awk'])
 
     if (returncode == 1):
         print("[!] Warning /usr/bin/awk is missing. Quitting")
         sys.exit(1)
+
+    try:
+        import matplotlib.pyplot as plt
+        from geolite2 import geolite2
+    except (ModuleNotFoundError):
+        print("[!] Warning required modules not found")
+        print("[*] Please install matplotlib, geolite2")
+        print("[+] pip3 install --user python-geoip python-geoip-geolite2 matplotlib")
+        sys.exit(1)
+
     
 
 def check_files(files=[]):
@@ -431,11 +444,40 @@ def write_file(out_data=[], filename=''):
 
 
 ##################################################
-# Main Function
+#           Commandline Operations
+##################################################
+
+def print_intro():
+    global version
+    print("Fail2Ban Log Analysis - %s" % version)
+
+def print_help():
+    print("Usage: %s fail2ban.log" % sys.argv[0])
+
+def check_args():
+
+    if (len(sys.argv) < 2 or len(sys.argv) > 2):
+        print_help()
+        sys.exit(1)
+
+    input_file = [sys.argv[1]]
+
+    if (check_files(input_file) == False):
+        print("[!] Warning file %s not found. Quitting"  % input_file[0]) 
+        sys.exit(1)
+
+
+
+##################################################
+#               Main Function
 ##################################################
 
 def main():
     global tmp_outfile, save_file, out_data, record
+
+    print_intro()
+
+    check_args()
 
     check_errors()
 
